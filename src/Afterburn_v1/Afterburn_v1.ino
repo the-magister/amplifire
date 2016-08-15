@@ -17,6 +17,7 @@ Sensor sensor;
 // C: arm, green, D3
 #define ARM_PIN 3
 #define MODE_PIN 4
+#define PWR_PIN 5
 
 Bounce modeSelect(MODE_PIN, 5UL);
 const byte nModes = 2;
@@ -25,6 +26,12 @@ const unsigned long offDuration[nModes] = {100, 50};
 const byte nCycles[nModes] = {1, 5};
 
 void setup() {
+  // watch armed line
+  pinMode(ARM_PIN, INPUT);
+
+  // congfigure power pin
+  pinMode(PWR_PIN, INPUT);
+
   // put your setup code here, to run once:
   Serial.begin(115200);
 
@@ -35,8 +42,6 @@ void setup() {
   // set up the sensor
   sensor.begin();
 
-  // watch armed line
-  pinMode(ARM_PIN, INPUT);
 }
 
 void loop() {
