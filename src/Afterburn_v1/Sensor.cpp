@@ -1,12 +1,11 @@
 #include "Sensor.h"
 
-void Sensor::begin(byte analogPin, byte digitalPin) {
+void Sensor::begin(byte analogPin, byte digitalPin, byte gndPin, byte vccPin) {
   Serial << F("Sensor.  begin.");
 
   // set the pins
   this->analogPin = analogPin;
-  pinMode(analogPin, INPUT);
-  Serial << F("\tanalogPin=") << this->analogPin;
+  Serial << F("\tanalogPin=A") << this->analogPin;
   
   this->digitalPin = digitalPin;
   pinMode(digitalPin, INPUT);
@@ -15,6 +14,14 @@ void Sensor::begin(byte analogPin, byte digitalPin) {
   // get threshold value from EEPROM
   EEPROM.get(EEPROM_THRESH_LOC, this->analogThreshold);
   Serial << F("\tanalogThreshold=") << this->analogThreshold;
+
+  digitalWrite(gndPin, LOW);
+  pinMode(gndPin, OUTPUT);
+  Serial << F("\tgndPin=") << gndPin;
+  
+  digitalWrite(vccPin, HIGH);
+  pinMode(vccPin, OUTPUT);
+  Serial << F("\tvccPin=") << vccPin;
 
   Serial << endl;
 }
@@ -32,7 +39,7 @@ void Sensor::show() {
   Serial << F("\tdigital=") << digitalValue();
   Serial << F("\tanalog=") << analogValue();
   Serial << F("\tthreshold=") << analogThreshold;
-  Serial << F("\tanalogTruel=") << analogTrue();
+  Serial << F("\tanalogTrue=") << analogTrue();
   Serial << F("\teitherTrue=") << eitherTrue();
   Serial << F("\tbothTrue=") << bothTrue();
   Serial << endl;
@@ -48,10 +55,10 @@ word Sensor::analogValue() {
 
 // convenience functions
 boolean Sensor::digitalTrue() {
-  return( digitalValue() == 1 );
+  return( digitalValue() == 0 );
 }
 boolean Sensor::analogTrue() {
-  return( analogValue() >= this->analogThreshold );
+  return( analogValue() <= this->analogThreshold );
 }
 boolean Sensor::eitherTrue() {
   return( digitalTrue() || analogTrue() );

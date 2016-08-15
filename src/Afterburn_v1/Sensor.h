@@ -12,7 +12,7 @@
 class Sensor {
   public: 
     // setup
-    void begin(byte analogPin, byte digitalPin); // set the pin
+    void begin(byte analogPin=0, byte digitalPin=12, byte gndPin=11, byte vccPin=10); // set the pin
     void setThreshold(word analogThreshold);
 
     // information
