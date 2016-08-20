@@ -5,33 +5,34 @@
 #include "Solenoid.h"
 #include "Sensor.h"
 
+
+// A: on/off, orange, D5
+// B: selector, yellow, D4
+// C: arm, green, D3
+// D: fire, blue, D2
+
 Solenoid solenoid;
-// D: solenoid, blue
 #define SOLENOID_PIN 2
 #define SOLENOID_OFF LOW
 #define FIRE_AGAIN_LOCKOUT_DURATION 1000UL // after firing, don't fire again until this duration elapses.
 
 Sensor sensor;
-// A: on/off, orange, D5
-// B: selector, yellow, D4
-// C: arm, green, D3
-#define ARM_PIN 3
-#define MODE_PIN 4
-#define PWR_PIN 5
 
-Bounce modeSelect(MODE_PIN, 5UL);
+#define ARM_PIN 3
+#define BOUNCE_TIME 1UL
+Bounce armedSelect(ARM_PIN, BOUNCE_TIME);
+
+#define UNUSED_PIN 5
+Bounce unusedSelect(ARM_PIN, BOUNCE_TIME);
+
+#define MODE_PIN 4
+Bounce modeSelect(MODE_PIN, BOUNCE_TIME);
 const byte nModes = 2;
 const unsigned long onDuration[nModes] = {50, 100};
 const unsigned long offDuration[nModes] = {100, 50};
-const byte nCycles[nModes] = {1, 5};
+const byte nCycles[nModes] = {1, 100};
 
 void setup() {
-  // watch armed line
-  pinMode(ARM_PIN, INPUT);
-
-  // congfigure power pin
-  pinMode(PWR_PIN, INPUT);
-
   // put your setup code here, to run once:
   Serial.begin(115200);
 
@@ -41,10 +42,15 @@ void setup() {
 
   // set up the sensor
   sensor.begin();
-
 }
 
 void loop() {
+
+  // see if arming state has changed
+  boolean armed = checkForArmed();
+  if( ! armed ) {
+    solenoid.stop(); // just in case
+  } 
 
   // if we're firing, just pay attention to that
   static boolean haveJustFired = false;
@@ -71,14 +77,8 @@ void loop() {
   // see if a new analog threshold has been given over serial
   checkForThresholdSet();
 
-  // see if arming state has changed
-  boolean armed = checkForArmed();
-  if( ! armed ) {
-    solenoid.stop(); // just in case
-  } else {
-    // check for sensor activity
-    checkForSensor();
-  }
+  // check for sensor activity
+  if( armed ) checkForSensor();
 
   static Metro printInterval(1000UL);
   if ( printInterval.check() ) sensor.show();
@@ -86,7 +86,8 @@ void loop() {
 
 void checkForModeSelect() {
   static byte currentMode = 0; // will set to zero at first run
-  if ( modeSelect.update() ) {
+  if ( modeSelect.update() && modeSelect.read() == HIGH ) {
+    
     // button state changed
     currentMode++;
     if ( currentMode >= nModes ) currentMode = 0;
@@ -110,7 +111,15 @@ void checkForThresholdSet() {
 }
 
 boolean checkForArmed() {
-  return( digitalRead(ARM_PIN) );
+  boolean changed = armedSelect.update();
+  boolean armed = armedSelect.read() == HIGH;
+  if( changed && armed ) {
+    Serial << F("*** ARMED ***") << endl;
+  }
+  if( changed && !armed ) {
+    Serial << F("*** DISARMED ***") << endl;
+  }
+  return( armed );
 }
 
 void checkForSensor() {
