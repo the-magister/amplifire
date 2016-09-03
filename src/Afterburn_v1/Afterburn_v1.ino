@@ -50,8 +50,8 @@ void loop() {
   boolean armed = checkForArmed();
   if( ! armed ) {
     solenoid.stop(); // just in case
-  } 
-
+  }
+  
   // if we're firing, just pay attention to that
   static boolean haveJustFired = false;
   static Metro fireAgainLockout(FIRE_AGAIN_LOCKOUT_DURATION);
@@ -113,17 +113,27 @@ void checkForThresholdSet() {
 boolean checkForArmed() {
   boolean changed = armedSelect.update();
   boolean armed = armedSelect.read() == HIGH;
+
   if( changed && armed ) {
     Serial << F("*** ARMED ***") << endl;
+    // set our threshold from the average of 10 current readings.
+    unsigned long thresh = 0;
+    for( byte i=0; i<10; i++ ) {
+      thresh += sensor.analogValue();
+    }
+    thresh /= 10;
+    sensor.setThreshold(thresh - 50);
   }
+
   if( changed && !armed ) {
     Serial << F("*** DISARMED ***") << endl;
   }
+  
   return( armed );
 }
 
 void checkForSensor() {
-  if( sensor.eitherTrue() ) {
+  if( sensor.analogTrue() ) {
     Serial << F("*** SENSOR TRIPPED ***") << endl;
     sensor.show();
     solenoid.show();
