@@ -36,12 +36,12 @@ void Sensor::setThreshold(word analogThreshold) {
 // information
 void Sensor::show() {
   Serial << F("Sensor.");
-  Serial << F("\tdigital=") << digitalValue();
+//  Serial << F("\tdigital=") << digitalValue();
   Serial << F("\tanalog=") << analogValue();
   Serial << F("\tthreshold=") << analogThreshold;
   Serial << F("\tanalogTrue=") << analogTrue();
-  Serial << F("\teitherTrue=") << eitherTrue();
-  Serial << F("\tbothTrue=") << bothTrue();
+//  Serial << F("\teitherTrue=") << eitherTrue();
+//  Serial << F("\tbothTrue=") << bothTrue();
   Serial << endl;
 }
 

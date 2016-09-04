@@ -34,7 +34,7 @@ void Solenoid::set(unsigned long onDuration, unsigned long offDuration, byte cyc
   this->cyclesTotal = constrain(cycles, 0, MAX_CYCLES);
   this->onDuration = constrain(onDuration, MIN_DURATION, MAX_DURATION);
   this->offDuration = constrain(offDuration, MIN_DURATION, MAX_DURATION);
-  this->startDelay = constrain(startDelay, MIN_DURATION, MAX_DURATION);
+  this->startDelay = constrain(startDelay, 0, MAX_DURATION);
   this->remainingCycles = 0;
 }
 

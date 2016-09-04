@@ -22,15 +22,18 @@ Sensor sensor;
 #define BOUNCE_TIME 1UL
 Bounce armedSelect(ARM_PIN, BOUNCE_TIME);
 
-#define UNUSED_PIN 5
-Bounce unusedSelect(ARM_PIN, BOUNCE_TIME);
+#define COUNT_PIN 5
+Bounce countSelect(COUNT_PIN, BOUNCE_TIME);
+#define N_CYCLE 3
+byte nCycle = 0;
+const byte cycle[N_CYCLE] = {1, 3, 5};
 
-#define MODE_PIN 4
-Bounce modeSelect(MODE_PIN, BOUNCE_TIME);
-const byte nModes = 2;
-const unsigned long onDuration[nModes] = {50, 100};
-const unsigned long offDuration[nModes] = {100, 50};
-const byte nCycles[nModes] = {1, 100};
+#define DURATION_PIN 4
+Bounce durationSelect(DURATION_PIN, BOUNCE_TIME);
+#define N_DURATION 3
+byte nDuration = 0;
+const unsigned long onDuration[N_DURATION] = {100, 200, 500};
+const unsigned long offDuration = 50;
 
 #define NUM_LEDS 9
 #define PIN_CLK 6 // yellow wire on LED strip
@@ -44,7 +47,7 @@ void setup() {
 
   // set up the solenoid
   solenoid.begin(SOLENOID_PIN, SOLENOID_OFF);
-  setMode(0);
+  setSolenoidAction();
 
   // set up the sensor
   sensor.begin();
@@ -84,8 +87,9 @@ void loop() {
     }
   }
 
-  // check for a mode change
-  checkForModeSelect();
+  // check for operational changes
+  checkForCountSelect();
+  checkForDurationSelect();
 
   // see if a new analog threshold has been given over serial
   checkForThresholdSet();
@@ -97,29 +101,45 @@ void loop() {
   if ( printInterval.check() ) sensor.show();
 
   // update the lights
-  static byte gHue = random8(0,255);
-  // FastLED's built-in rainbow generator
-  fill_rainbow( leds, NUM_LEDS, gHue++, 360/(NUM_LEDS-1));
-  FastLED.show();
-
+  static byte currentHue = 0;
+  if( armed ) currentHue = HUE_RED;
+  else currentHue ++;
+  showSettings(currentHue);
+  
 }
 
-void checkForModeSelect() {
-  static byte currentMode = 0; // will set to zero at first run
-  if ( modeSelect.update() && modeSelect.read() == HIGH ) {
+void showSettings(byte hue) {
+  fill_rainbow(leds, NUM_LEDS, hue, 360/(NUM_LEDS-1));
+  FastLED.show();
+}
+
+
+void setSolenoidAction() {
+  solenoid.set(onDuration[nDuration], offDuration, cycle[nCycle]);
+  solenoid.show();
+}
+
+void checkForDurationSelect() {
+  if ( durationSelect.update() && durationSelect.read() == HIGH ) {
     
     // button state changed
-    currentMode++;
-    if ( currentMode >= nModes ) currentMode = 0;
+    nDuration++;
+    if ( nDuration >= N_DURATION ) nDuration = 0;
     // change timings
-    setMode(currentMode);
+    setSolenoidAction();
+  }
+}
+void checkForCountSelect() {
+  if ( countSelect.update() && countSelect.read() == HIGH ) {
+    
+    // button state changed
+    nCycle++;
+    if ( nCycle >= N_CYCLE ) nCycle = 0;
+    // change timings
+    setSolenoidAction();
   }
 }
 
-void setMode(byte i) {
-  solenoid.set(onDuration[i], offDuration[i], nCycles[i]);
-  solenoid.show();
-}
 
 void checkForThresholdSet() {
   if ( Serial.available() ) {
