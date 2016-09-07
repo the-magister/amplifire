@@ -14,7 +14,8 @@ class Sensor {
     // setup
     void begin(byte analogPin=0, byte digitalPin=12, byte gndPin=11, byte vccPin=10); // set the pin
     void setThreshold(word analogThreshold);
-
+    word getThreshold();
+    
     // information
     void show(); // show current settings
     

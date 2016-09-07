@@ -28,9 +28,13 @@ void Sensor::begin(byte analogPin, byte digitalPin, byte gndPin, byte vccPin) {
 
 void Sensor::setThreshold(word analogThreshold) {
   this->analogThreshold = constrain(analogThreshold, 0, 1023);
-  EEPROM.put(EEPROM_THRESH_LOC, this->analogThreshold);
+//  EEPROM.put(EEPROM_THRESH_LOC, this->analogThreshold);
 
-  Serial << F("Sensor.  analogThreshold=") << this->analogThreshold << endl;
+  Serial << F("Sensor.  setting analogThreshold=") << this->analogThreshold << endl;
+}
+
+word Sensor::getThreshold() {
+  return( this->analogThreshold );
 }
 
 // information

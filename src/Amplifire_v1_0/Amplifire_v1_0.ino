@@ -18,28 +18,34 @@ Solenoid solenoid;
 
 Sensor sensor;
 
+// analog reading must drop by this value from value at armed for firing to occur
+const word delta = 50;
+const unsigned long retriggerInterval = 100UL; // ms
+
 #define ARM_PIN 3
 #define BOUNCE_TIME 1UL
 Bounce armedSelect(ARM_PIN, BOUNCE_TIME);
 
 #define COUNT_PIN 5
 Bounce countSelect(COUNT_PIN, BOUNCE_TIME);
-#define N_CYCLE 3
+#define N_CYCLE 4
 byte nCycle = 0;
-const byte cycle[N_CYCLE] = {1, 3, 5};
+const byte cycle[N_CYCLE] = {1, 3, 5, 10};
 
 #define DURATION_PIN 4
 Bounce durationSelect(DURATION_PIN, BOUNCE_TIME);
 #define N_DURATION 3
 byte nDuration = 0;
-const unsigned long onDuration[N_DURATION] = {100, 200, 500};
-const unsigned long offDuration = 50;
+const unsigned long onDuration[N_DURATION] = {100UL, 200UL, 500UL};
+const unsigned long offDuration = 50UL;
+unsigned long simulationEvery = 1000UL;
 
 #define NUM_LEDS 9
 #define PIN_CLK 6 // yellow wire on LED strip
 #define PIN_DATA 7 // green wire on LED strip
 CRGB leds[NUM_LEDS];
 #define MASTER_BRIGHTNESS 255
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -65,57 +71,62 @@ void loop() {
   // see if arming state has changed
   boolean armed = checkForArmed();
   if( ! armed ) {
-    solenoid.stop(); // just in case
-  }
+    // check for operational changes
+    checkForCountSelect();
+    checkForDurationSelect();
   
-  // if we're firing, just pay attention to that
-  static boolean haveJustFired = false;
-  static Metro fireAgainLockout(FIRE_AGAIN_LOCKOUT_DURATION);
-  if ( solenoid.running() ) {
-    haveJustFired = true;
-    fireAgainLockout.reset();
-    return;
-  }
+    // see if a new analog threshold has been given over serial
+    checkForThresholdSet();
 
-  // if we've just fired, check lockout timer to prevent refiring
-  if ( haveJustFired ) {
-    if ( fireAgainLockout.check() ) {
-      // ok to fire again
-      haveJustFired = false;
+    // see if we need to run another trial loop
+    static Metro simulationInterval(simulationEvery);
+    if( !solenoid.running() ) {
+      if( simulationInterval.check() ) {
+        Serial << F("Simulation started.") << endl;
+        solenoid.show();
+        solenoid.start();
+      }
     } else {
-      return;
+      simulationInterval.reset();
     }
+
+  } else {
+    // check for sensor activity
+    if( !solenoid.running() ) checkForSensor();
   }
-
-  // check for operational changes
-  checkForCountSelect();
-  checkForDurationSelect();
-
-  // see if a new analog threshold has been given over serial
-  checkForThresholdSet();
-
-  // check for sensor activity
-  if( armed ) checkForSensor();
-
-  static Metro printInterval(1000UL);
-  if ( printInterval.check() ) sensor.show();
 
   // update the lights
-  static byte currentHue = 0;
-  if( armed ) currentHue = HUE_RED;
-  else currentHue ++;
-  showSettings(currentHue);
+  showSettings(armed, solenoid.isFiring());
   
+  static Metro printInterval(1000UL);
+  if ( printInterval.check() ) sensor.show();
+ 
 }
 
-void showSettings(byte hue) {
-  fill_rainbow(leds, NUM_LEDS, hue, 360/(NUM_LEDS-1));
+void showSettings(boolean armed, boolean on) {
+  // used colors
+  const CRGB armedOn = CRGB(255,0,0);
+  const CRGB armedOff = CRGB(64,0,0);
+  const CRGB disarmedOn = CRGB(0,0,255);
+  const CRGB disarmedOff = CRGB(0,0,64);
+
+  // track color
+  static CRGB color = disarmedOff;
+  
+  if(armed && on) color=blend(color, armedOn, 50);
+  else if(armed && !on) color=blend(color, armedOff, 50);
+  else if(!armed && on) color=blend(color, disarmedOn, 5);
+  else if(!armed && !on) color=blend(color, disarmedOff, 5);
+
+  fill_solid(leds, NUM_LEDS, color);
+  
   FastLED.show();
 }
 
 
 void setSolenoidAction() {
   solenoid.set(onDuration[nDuration], offDuration, cycle[nCycle]);
+  solenoid.stop();
   solenoid.show();
 }
 
@@ -155,31 +166,63 @@ boolean checkForArmed() {
   boolean armed = armedSelect.read() == HIGH;
 
   if( changed && armed ) {
-    Serial << F("*** ARMED ***") << endl;
+    solenoid.stop(); // clear any running simulation
+    solenoid.arm(); // arm the solneoid
+    
     // set our threshold from the average of 10 current readings.
     unsigned long thresh = 0;
     for( byte i=0; i<10; i++ ) {
       thresh += sensor.analogValue();
     }
     thresh /= 10;
-    sensor.setThreshold(thresh - 50);
+    sensor.setThreshold(thresh > delta ? thresh - delta : 5);
   }
 
   if( changed && !armed ) {
-    Serial << F("*** DISARMED ***") << endl;
+    // immediate disable of firing
+    solenoid.stop(); // just in case
+    solenoid.disarm();
   }
   
   return( armed );
 }
 
 void checkForSensor() {
-  if( sensor.analogTrue() ) {
+//  word reading = sensor.analogValue();
+//  static word lastReading = reading;
+
+//  word thresh = sensor.getThreshold();
+  
+  static boolean canTrigger = true;
+  static Metro retrigger(retriggerInterval);
+
+  // read the sensor
+  boolean sensorTrigger = sensor.analogTrue();
+
+  // can we trigger and is there a trigger signal?
+  if( canTrigger &&  sensorTrigger) {
     Serial << F("*** SENSOR TRIPPED ***") << endl;
     sensor.show();
     solenoid.show();
   
     Serial << F("******* FIRING *******") << endl;
     solenoid.start();
+
+    canTrigger = false;
   }
+  // can we not trigger and is there a trigger signal?
+  else if( !canTrigger && sensorTrigger ) {
+    // block a retrigger 
+    retrigger.reset();
+  }
+  // can we not trigger and is there not a trigger signal?
+  else if( !canTrigger && !sensorTrigger ) {
+    // if the retrigger interval up, now we can trigger again
+    if( retrigger.check() ) {
+      canTrigger = true;
+      Serial << F("*** will retrigger ***") << endl;
+    }
+  }
+
 }
 

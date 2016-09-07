@@ -5,8 +5,8 @@ void Solenoid::setOff() {
   digitalWrite(this->pin, this->off);
 }
 void Solenoid::setOn() { 
-  this->isOn = true;;
-  digitalWrite(this->pin, this->on);
+  this->isOn = true;
+  if( this->isArmed ) digitalWrite(this->pin, this->on);
 }
 void Solenoid::toggle() { 
   if( this->isOn ) {
@@ -15,66 +15,82 @@ void Solenoid::toggle() {
     this->setOn();
   }
 }
+boolean Solenoid::isFiring() {
+  return( isOn );
+}
+
+void Solenoid::arm() { // allow firing of the solenoid
+  if( !this->isArmed ) {
+    Serial << F("**** ARMED ****") << endl;
+    this->isArmed = true;
+  }
+}
+void Solenoid::disarm() { // disallow firing of the solenoid.
+  if( this->isArmed ) {
+    Serial << F("** disharmed **") << endl;
+    this->isArmed = false;
+  }
+}
 
 void Solenoid::begin(byte pin, byte offDefinition) {
   this->pin = pin;
   this->off = offDefinition;
   this->on = !offDefinition;
   this->setOff();
+  this->disarm();
 
   // then set the pin to OUTPUT _after_ setting to Off state!
   pinMode(this->pin, OUTPUT);
 
   Serial << F("Solenoid initializing.  pin=") << this->pin << F(" off=") << this->off << endl;
 
-  this->set(0,0,0,0); // start with doing nothing.
+  this->set(0,0,0); // start with doing nothing.
 }
 
-void Solenoid::set(unsigned long onDuration, unsigned long offDuration, byte cycles, unsigned long startDelay) {
+void Solenoid::set(unsigned long onDuration, unsigned long offDuration, byte cycles) {
   this->cyclesTotal = constrain(cycles, 0, MAX_CYCLES);
   this->onDuration = constrain(onDuration, MIN_DURATION, MAX_DURATION);
   this->offDuration = constrain(offDuration, MIN_DURATION, MAX_DURATION);
-  this->startDelay = constrain(startDelay, 0, MAX_DURATION);
   this->remainingCycles = 0;
 }
 
 void Solenoid::show() {
   Serial << F("Solenoid settings.  pin=") << this->pin << F(". on/off=") << this->onDuration << "/";
-  Serial << this->offDuration << F(" ms. cycles=") << this->cyclesTotal << F(". start delay=") << this->startDelay; 
-  Serial << " ms." << endl; 
+  Serial << this->offDuration << F(" ms. cycles=") << this->cyclesTotal << endl; 
 }
 
 void Solenoid::start() {
   // assign the work load.
   this->remainingCycles = this->cyclesTotal;
   this->setOff();
-  
-  if( startDelay> 0 ) {
-    // we need to add some delay here
-    this->timer.interval(startDelay);
-    this->timer.reset();
-  } else {
-    // so will go on ASAP
-    this->timer.interval(0);
-    this->timer.reset();
-  }
+  this->timer.interval(0);
+  this->timer.reset();
 }
 
 boolean Solenoid::running() {
   // bail out if we're not needed
-  if( this->remainingCycles < 1 ) return(false);
-   
+  if( this->remainingCycles <= 0 ) {
+    this->setOff();
+    return(false);
+  } 
+
   // is the timer up?
-  if( this->timer.check() ) {
-    this->toggle();
+  else if( this->timer.check() ) {
+    
+    if( this->remainingCycles <= 0) this->setOff();
+    else this->toggle();
+    
     if( this->isOn ) {
-      // started a new cycle
+      // started a cycle
+      
       this->timer.interval(this->onDuration);
     } else {
       // ended a cycle
-      this->timer.interval(this->offDuration);
+      
       // decrement work
-      this->remainingCycles--;
+      this->remainingCycles--; 
+
+      this->timer.interval(this->offDuration);
     }
     this->timer.reset();
   }
@@ -83,7 +99,8 @@ boolean Solenoid::running() {
 }
 
 void Solenoid::stop() {
-  this->remainingCycles = 0;
+  // do not enforce cooldown if we're stopped this way
   this->setOff();
+  this->remainingCycles = 0;
 }
 
