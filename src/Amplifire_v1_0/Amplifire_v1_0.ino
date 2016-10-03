@@ -18,8 +18,7 @@ Solenoid solenoid;
 
 Sensor sensor;
 
-// analog reading must drop by this value from value at armed for firing to occur
-const word delta = 50;
+// only allow retriggering after this interval has passed
 const unsigned long retriggerInterval = 100UL; // ms
 
 #define ARM_PIN 3
@@ -170,12 +169,14 @@ boolean checkForArmed() {
     solenoid.arm(); // arm the solneoid
     
     // set our threshold from the average of 10 current readings.
-    unsigned long thresh = 0;
+    unsigned long readings = 0;
     for( byte i=0; i<10; i++ ) {
-      thresh += sensor.analogValue();
+      readings += sensor.analogValue();
     }
-    thresh /= 10;
-    sensor.setThreshold(thresh > delta ? thresh - delta : 5);
+    readings /= 10;
+    // readings need to drop below 80% of the current value for a trigger to happen
+    word thresh = map(80, 0, 100, 0, readings);
+    sensor.setThreshold(thresh);
   }
 
   if( changed && !armed ) {
@@ -200,7 +201,7 @@ void checkForSensor() {
   boolean sensorTrigger = sensor.analogTrue();
 
   // can we trigger and is there a trigger signal?
-  if( canTrigger &&  sensorTrigger) {
+  if( canTrigger && sensorTrigger) {
     Serial << F("*** SENSOR TRIPPED ***") << endl;
     sensor.show();
     solenoid.show();
