@@ -6,15 +6,23 @@
 #include <EEPROM.h>
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
-#include "Solenoid.h"
-#include "Sensor.h"
 
+#include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h> // add mDNS to overcome ping timeout issues
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+
+#include "Solenoid.h"
 Solenoid solenoid;
 #define SOLENOID_PIN 15
 #define SOLENOID_OFF LOW
 
+#include "Sensor.h"
 Sensor sensor;
 #define ANALOG_PIN A0
+
+#include "Server.h"
+AP ap;
 
 unsigned long simulationDelay = 5000UL;
 
@@ -41,7 +49,6 @@ Metro simulationInterval(1UL);
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-
 
   // http://esp8266.github.io/Arduino/versions/2.0.0/doc/libraries.html#eeprom
   EEPROM.begin(512);
@@ -71,6 +78,10 @@ void setup() {
 
   Serial << endl;
 
+  // set up the AP and web server
+  ap.begin();
+  ap.set(s.armed, s.onDuration, s.offDuration, s.nCycles, s.retriggerDelay, s.thresholdPercent);
+
   // set up the LEDs
   FastLED.addLeds<WS2801, PIN_DATA, PIN_CLK, RGB>(leds, NUM_LEDS);
 
@@ -98,7 +109,20 @@ void loadEEPROM() {
 }
 
 void loop() {
+  // check for traffic
+  if( ap.update() ) {
+    // First, Do No Harm.
+    solenoid.stop();
 
+    // got traffic
+    ap.get(s.armed, s.onDuration, s.offDuration, s.nCycles, s.retriggerDelay, s.thresholdPercent);
+    
+    // update settings
+    setSolenoidAction();
+    setSimulationAction();
+    setSensorAction();
+  }
+  
   // see if arming state has changed
   if ( ! s.armed ) {
 
