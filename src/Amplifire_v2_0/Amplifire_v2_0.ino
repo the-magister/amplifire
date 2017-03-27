@@ -56,7 +56,7 @@ void setup() {
   saveEEPROM();
   loadEEPROM();
 
-  s.armed = true;
+  s.armed = false;
 
   // set up the sensor
   sensor.begin(ANALOG_PIN);
