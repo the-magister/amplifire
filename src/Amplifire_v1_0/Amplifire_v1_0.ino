@@ -1,3 +1,5 @@
+// Arduino Pro Mini.
+
 #include <Streaming.h>
 #include <Metro.h>
 #include <Bounce.h>
