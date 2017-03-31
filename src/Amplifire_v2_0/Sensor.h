@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
-#include <EEPROM.h>
+#include <Metro.h>
 
 #define EEPROM_THRESH_LOC 101
 
@@ -22,7 +22,7 @@ class Sensor {
     void setThreshold(byte percentThreshold);
 
     // convenience functions
-    word analogValue();
+    word analogValue(unsigned long readFor=5UL);
     boolean analogTrue();
 
   private:

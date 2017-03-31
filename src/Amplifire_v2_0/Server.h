@@ -6,12 +6,13 @@
 #include <Metro.h>
 
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h> // add mDNS to overcome ping timeout issues
-#include <DNSServer.h>
+#include <WiFiClient.h> 
 #include <ESP8266WebServer.h>
+#include <DNSServer.h>
 
 // handled outside of class
 void handleRoot();
+void handleCaptiveGateway();
 
 class AP {
   public:
@@ -31,7 +32,6 @@ class AP {
     void returnForm();
     
   private:
-    String message;
     String radioInput(String name, String value, boolean checked, String text);
     String numberInput(String name, int value, int minval, int maxval);
     

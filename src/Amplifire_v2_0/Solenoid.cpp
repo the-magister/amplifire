@@ -60,6 +60,7 @@ void Solenoid::show() {
   Serial << F("on=") << onDuration << F("ms ");
   Serial << F("off=") << offDuration << F("ms ");
   Serial << F("cycles=") << cyclesTotal << F(". ");
+  Serial << endl;
 }
 
 void Solenoid::start() {

@@ -8,34 +8,26 @@ void Sensor::begin(byte analogPin) {
   pinMode( analogPin, INPUT);
   Serial << F("\tanalogPin=A") << this->analogPin;
 
-  // get threshold value from EEPROM
-  EEPROM.get(EEPROM_THRESH_LOC, this->analogThreshold);
-  Serial << F("\tanalogThreshold=") << this->analogThreshold;
-
   Serial << endl;
 }
 
 void Sensor::setThreshold(byte percentThreshold) {
 
-  // set our threshold from the average of 10 current readings.
-  unsigned long readings = 0;
-  for ( byte i = 0; i < 10; i++ ) {
-    readings += this->analogValue();
-    delay(5);
-  }
-  readings /= 10;
+  // set our threshold from the average of 10ms of readings
+  unsigned long readings = analogValue(10UL);
   
   // readings need to drop below X% of the current value for a trigger to happen
   this->analogThreshold = map(constrain(percentThreshold,0,100), 0, 100, 0, readings);
 
-  Serial << F("Sensor.  setting analogThreshold=") << this->analogThreshold << endl;
+  Serial << F("Sensor: readings=") << readings << F(" *0.") << percentThreshold << F(" -> analogThreshold=") << this->analogThreshold << endl;
 }
 
 
 // information
 void Sensor::show() {
   Serial << F("Sensor: (") << analogValue() << F("/") << analogThreshold << F("->") << analogTrue() << F(") ");
-  Serial << F("retrigger delay=") << this->retriggerDelay << F(". ");
+  Serial << F("retrigger delay=") << this->retriggerDelay << F("ms. ");
+  Serial << endl;
 }
 
 void Sensor::setRetriggerDelay(unsigned long retriggerDelay) {
@@ -43,8 +35,19 @@ void Sensor::setRetriggerDelay(unsigned long retriggerDelay) {
 }
 
 
-word Sensor::analogValue() {
-  return ( analogRead(this->analogPin) );
+word Sensor::analogValue(unsigned long readFor) {
+  Metro readTime(readFor);
+  readTime.reset();
+  // get 92 readings in 10ms, so ~0.1 ms/reading
+  unsigned long values = 0;
+  word count = 0;
+  while( !readTime.check() ) {
+    values += analogRead(this->analogPin);
+    count++;
+  }
+  values /= count;
+//  Serial << F("Sensor: ") << count << F(" readings and average value=") << values << endl;
+  return ( values );
 }
 
 // convenience functions

@@ -1,8 +1,8 @@
 #include "Server.h"
 
 DNSServer dnsServer;
-
 ESP8266WebServer webServer(80);
+String message;
 
 void AP::begin() {
   /* Set these to your desired credentials. */
@@ -12,39 +12,76 @@ void AP::begin() {
 
   /* Soft AP network parameters */
   IPAddress apIP(192, 168, 1, 1);
+  IPAddress gate(192, 168, 1, 1);
   IPAddress netMsk(255, 255, 255, 0);
 
+  // set AP mode
+  WiFi.mode(WIFI_AP);
+  WiFi.disconnect();
+
   Serial << F("Server: configuring AP(") << ssid << F(") password(") << password << F(").") << endl;
-  WiFi.softAPConfig(apIP, apIP, netMsk);
-  WiFi.softAP(ssid, password);
+  WiFi.softAPConfig(apIP, gate, netMsk);
+  const byte channel = 8; // [1-13]
+  WiFi.softAP(ssid, password, channel);
   delay(500); // Without delay I've seen the IP address blank
   
   IPAddress myIP = WiFi.softAPIP();
   Serial << F("Server: connect to http://") << myIP << F(" or http://") << myHostname << F(".local") << endl;
 
-  // DNS server
+  // Setup the DNS server redirecting all the domains to the apIP 
   const byte DNS_PORT = 53;
-
-  /* Setup the DNS server redirecting all the domains to the apIP */  
-  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
-  dnsServer.start(DNS_PORT, "*", apIP);
+//  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  dnsServer.setTTL(300);
+  dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
+  if( dnsServer.start(DNS_PORT, "*", apIP) ) {
+    Serial << F("Server: DNS started") << endl;
+  } else {
+    Serial << F("Server: ERROR on DNS startup!") << endl;
+  }
+  delay(500); // Pause ?
   
-  webServer.onNotFound(handleRoot);
+  webServer.on("/", handleRoot);
+  webServer.onNotFound( handleCaptiveGateway );
   webServer.begin();
+  Serial << F("Server: web server started") << webServer.uri() << endl;
 
   // big strings, so let's avoid fragmentation by pre-allocating
-  this->message.reserve(4096);
+  message.reserve(4096);
 }
 
 
 boolean AP::update() {
   this->haveUpdate = false;
   
-  webServer.handleClient();
   dnsServer.processNextRequest();
-  
-  return( this->haveUpdate );
+  webServer.handleClient();
+
+  static byte lastClient, lastStatus;
+  byte client = webServer.client();
+  byte status = WiFi.status();
+  if( lastClient != client ) {
+    Serial << F("Server: client change ") << lastClient << F("->") << client << endl;
+    lastClient = client;    
+  }
+  if( lastStatus != status ) {
+    Serial << F("Server: WiFi change ") << lastStatus << F("->") << status << endl;
+    lastStatus = status;    
+  }
+
+  return ( this->haveUpdate );
 }
+/*
+   typedef enum {
+    WL_NO_SHIELD        = 255,   // for compatibility with WiFi Shield library
+    WL_IDLE_STATUS      = 0,
+    WL_NO_SSID_AVAIL    = 1,
+    WL_SCAN_COMPLETED   = 2,
+    WL_CONNECTED        = 3,
+    WL_CONNECT_FAILED   = 4,
+    WL_CONNECTION_LOST  = 5,
+    WL_DISCONNECTED     = 6
+  } wl_status_t;
+*/
 
 void AP::set(boolean armed, unsigned long onDuration, unsigned long offDuration, byte nCycles, unsigned long retriggerDelay, byte thresholdPercent) {
   this->armed = armed;
@@ -68,29 +105,12 @@ void AP::get(boolean &armed, unsigned long &onDuration, unsigned long &offDurati
 }
 
 
-extern AP ap;
-
-void handleRoot() {
-  if (webServer.hasArg("Armed")) {
-    // process submission
-    ap.set(
-      webServer.arg("Armed").toInt(),
-      webServer.arg("onDuration").toInt(),
-      webServer.arg("offDuration").toInt(),
-      webServer.arg("nCycles").toInt(),
-      webServer.arg("retriggerDelay").toInt(),
-      webServer.arg("thresholdPercent").toInt()
-    );
-  }
-  // send back the form
-  ap.returnForm();  
-}
-
 const char HEAD_FORM[] PROGMEM =
   "<!DOCTYPE HTML>"
   "<html>"
   "<head>"
-  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0\">"
+//  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0\">"
+  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0\">"
   "<title>Amplifire</title>"
   "<style>"
   "\"body { background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000; }\""
@@ -105,6 +125,40 @@ const char TAIL_FORM[] PROGMEM =
   "</html>"
   ;
 
+
+extern AP ap;
+
+void handleCaptiveGateway() {
+  // append header
+  message = FPSTR(HEAD_FORM);
+
+  message += "<h2><a href=\"http://192.168.1.1/\">http://192.168.1.1/</a></h2>";
+  
+ // append footer
+  message += FPSTR(TAIL_FORM);
+
+  // send form
+  webServer.send(200, "text/html", message);
+
+
+}
+
+void handleRoot() {
+  if (webServer.hasArg("Armed")) {
+    // process submission
+    ap.set(
+      webServer.arg("Armed").toInt(),
+      webServer.arg("onDuration").toInt(),
+      webServer.arg("offDuration").toInt(),
+      webServer.arg("nCycles").toInt(),
+      webServer.arg("retriggerDelay").toInt(),
+      webServer.arg("thresholdPercent").toInt()
+    );
+  }
+  // send back the form
+  ap.returnForm();
+}
+
 void AP::returnForm() {
   // append header
   message = FPSTR(HEAD_FORM);
@@ -118,19 +172,24 @@ void AP::returnForm() {
   message += "Armed ";
   message += radioInput("Armed", "1", false, "ARMED"); // Note that we never default to "ARMED" setting, even if that was pressed last time.
   message += radioInput("Armed", "0", true, "Disarmed");
-  message += "<br><br>";
+  message += "<br>";
 
   message += "<h4>Trigger</h4>";
-  message += numberInput("Percent", this->thresholdPercent, 0, 90);
-  message += numberInput("  Delay", this->retriggerDelay, 50, 3000);  
-  message += "<br><br>";
+  message += "Trigger Sensitivity [0-90]: ";
+  message += numberInput("thresholdPercent", this->thresholdPercent, 0, 90);
+  message += "<br>Retrigger After [50-3000] ms: ";
+  message += numberInput("retriggerDelay", this->retriggerDelay, 50, 3000);
+  message += "<br>";
 
   message += "<h4>Timing</h4>";
-  message += numberInput("On Duration", this->onDuration, 50, 3000);
-  message += numberInput("  Off Duration", this->offDuration, 50, 3000);
-  message += numberInput("  Cycles", this->nCycles, 1, 10);
+  message += "Open Time [50-3000] ms: ";
+  message += numberInput("onDuration", this->onDuration, 50, 3000);
+  message += "<br>Close Time [50-3000] ms: ";
+  message += numberInput("offDuration", this->offDuration, 50, 3000);
+  message += "<br>Number of open-close cycles: ";
+  message += numberInput("nCycles", this->nCycles, 1, 10);
   message += "<br><br>";
-  
+
   // close form
   message += "<INPUT type=\"submit\" value=\"Go!\">";
   message += "</P>";
@@ -157,23 +216,23 @@ String AP::numberInput(String name, int value, int minval, int maxval) {
 
 /*
 
-ESP8266WebServer server(80);
+  ESP8266WebServer server(80);
 
   server.handleClient();
 
 
-String message = "";
-// big strings, so let's avoid fragmentation by pre-allocating
-message.reserve(4096);
+  String message = "";
+  // big strings, so let's avoid fragmentation by pre-allocating
+  message.reserve(4096);
 
 
-void returnFail(String msg) {
+  void returnFail(String msg) {
   server.sendHeader("Connection", "close");
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(500, "text/plain", msg + "\r\n");
-}
+  }
 
-const char HEAD_FORM[] PROGMEM =
+  const char HEAD_FORM[] PROGMEM =
          client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");
           client.println("Connection: close");  // the connection will be closed after completion of the response
@@ -193,22 +252,22 @@ const char HEAD_FORM[] PROGMEM =
   "<h2>Amplifire</h2>"
   ;
 
-const char TAIL_FORM[] PROGMEM =
+  const char TAIL_FORM[] PROGMEM =
   "</body>"
   "</html>"
   ;
 
-// helper functions to construct a web form
-String radioInput(String name, String value, boolean checked, String text) {
+  // helper functions to construct a web form
+  String radioInput(String name, String value, boolean checked, String text) {
   String Checked = checked ? "checked" : "";
 
   return ( "<INPUT type=\"radio\" name=\"" + name + "\" value=\"" + value + "\" " + Checked + ">" + text );
-}
-String numberInput(String name, int value, int minval, int maxval) {
+  }
+  String numberInput(String name, int value, int minval, int maxval) {
   return ( "<INPUT type=\"number\" name=\"" + name + "\" value=\"" + String(value) + "\" min=\"" + String(minval) + "\" max=\"" + String(maxval) + "\">");
-}
+  }
 
-void returnForm() {
+  void returnForm() {
   // append header
   message = FPSTR(HEAD_FORM);
 
@@ -287,9 +346,9 @@ void returnForm() {
   server.send(200, "text/html", message);
 
   //  Serial << F("Sent ") << message.length() << F(" bytes:") << message << endl;
-}
+  }
 
-void handleSubmit() {
+  void handleSubmit() {
   if (!server.hasArg("Color")) return returnFail("BAD ARGS");
 
   // get form results
@@ -303,9 +362,9 @@ void handleSubmit() {
   Serial << F(" brightness=") << s.bright << F(" segments=") << s.segments << endl;
 
   updateFromSettings();
-}
+  }
 
-void handleNotFound() {
+  void handleNotFound() {
   message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -318,7 +377,7 @@ void handleNotFound() {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-}
+  }
 
 
 
@@ -340,7 +399,7 @@ void handleNotFound() {
   }
 
 
-void connect(void) {
+  void connect(void) {
   WiFiManager wifiManager;
 
   // will run the AP for three minutes and then try to reconnect
@@ -389,8 +448,8 @@ void connect(void) {
     Serial.println ( "MDNS responder started" );
   }
 
-}
+  }
 
 
-  
+
 */

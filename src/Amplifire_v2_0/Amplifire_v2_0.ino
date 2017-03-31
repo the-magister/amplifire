@@ -8,9 +8,9 @@
 #include <FastLED.h>
 
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h> // add mDNS to overcome ping timeout issues
-#include <DNSServer.h>
+#include <WiFiClient.h> 
 #include <ESP8266WebServer.h>
+#include <DNSServer.h>
 
 #include "Solenoid.h"
 Solenoid solenoid;
@@ -52,18 +52,8 @@ void setup() {
 
   // http://esp8266.github.io/Arduino/versions/2.0.0/doc/libraries.html#eeprom
   EEPROM.begin(512);
-
-  s.onDuration = 300UL;
-  s.offDuration = 100UL;
-  s.nCycles = 10;
-  s.armed = false;
-  s.retriggerDelay = 5000UL;
-  s.thresholdPercent = 80;
-
-  saveEEPROM();
   loadEEPROM();
-
-  s.armed = false;
+  s.armed = false; // just in case
 
   // set up the sensor
   sensor.begin(ANALOG_PIN);
@@ -116,11 +106,14 @@ void loop() {
 
     // got traffic
     ap.get(s.armed, s.onDuration, s.offDuration, s.nCycles, s.retriggerDelay, s.thresholdPercent);
-    
+
     // update settings
     setSolenoidAction();
     setSimulationAction();
     setSensorAction();
+
+    // save 
+    saveEEPROM();
   }
   
   // see if arming state has changed
@@ -146,13 +139,14 @@ void loop() {
   // update the lights
   showSettings(s.armed, solenoid.isFiring());
 
+/*
   static Metro printInterval(1000UL);
   if ( printInterval.check() ) {
     sensor.show();
     solenoid.show();
     Serial << endl;
   }
-
+*/
 }
 
 void showSettings(boolean armed, boolean on) {
@@ -180,8 +174,8 @@ void setSimulationAction() {
 }
 
 void setSensorAction() {
-  sensor.setRetriggerDelay(s.retriggerDelay + (s.onDuration + s.offDuration)*s.nCycles);
   sensor.setThreshold(s.thresholdPercent);
+  sensor.setRetriggerDelay(s.retriggerDelay + (s.onDuration + s.offDuration)*s.nCycles);
 
   sensor.show();
 }
