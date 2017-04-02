@@ -14,25 +14,25 @@ Amplifire serves up it's own WiFi Access Point (AP), with SSID "Amplifire".  The
 
 Once connected, Amplifire directs the Operator to connect to a web page at http://192.168.1.1/
 
-From there, the Operator can access operator of Amplifire, and provides the following interface:
+From there, the Operator can access operator of Amplifire, and provides the following interface.  During operation, Amplifire signals armed status with red color and disarmed status with blue color.  The open/close/retrigger timing is constantly simulated by increasing (solenoid open) and decreasing (solenoid closed) the brightness of the lighting.  This provides real-time feedback to the Operator to confirm that the settings are correct.  
 
-**Arming**
-
-ARMED/Disarmed.  *arming. Amplifire signals armed status with red color and disarmed status with blue color.*
-
-**Trigger**
-
-Trigger Sensitivity [0-90]: *Amplifire calibrates the IR level after each Operator input. This setting expresses the percentage change from the calibration reading required to trigger the Effect.  e.g. 90% is very sensitive, and 10% is very insensitive.* 
-
-Retrigger After [50-3000] ms: *pause for this amount of time after completing a firing sequence, so that it does not self-trigger.*
-
-**Timing**
-
-Open Time [50-3000] ms: *open the solenoid for this duration every cycle.*
-
-Close Time [50-3000] ms: *close the solenoid for this duration every cycle.*
-
-Number of open-close cycles: *perform this number of open/close cycles, then pause for the retrigger time before firing again.*
+> **Arming**
+> 
+> ARMED/Disarmed.  *arming, and set to "Disarmed" after each submission of the following settings.*
+> 
+> **Trigger**
+> 
+> Trigger Sensitivity [0-90]: *Amplifire calibrates the IR level after each Operator input. This setting expresses the percentage change from the calibration reading required to trigger the Effect.  e.g. 90% is very sensitive, and 10% is very insensitive.* 
+> 
+> Retrigger After [50-3000] ms: *pause for this amount of time after completing a firing sequence, so that it does not self-trigger.*
+> 
+> **Timing**
+> 
+> Open Time [50-3000] ms: *open the solenoid for this duration every cycle.*
+> 
+> Close Time [50-3000] ms: *close the solenoid for this duration every cycle.*
+> 
+> Number of open-close cycles: *perform this number of open/close cycles, then pause for the retrigger time before firing again.* 
 
 ## Design
 
