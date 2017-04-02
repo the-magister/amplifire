@@ -38,7 +38,7 @@ From there, the Operator can access operator of Amplifire, and provides the foll
 
 ### Physical Diagram
 
-![Physical Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/pysical.png)
+![Physical Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/physical.png)
 
 ## Fire Safety Plan
 
