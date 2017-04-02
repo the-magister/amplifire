@@ -113,7 +113,7 @@ const char HEAD_FORM[] PROGMEM =
   "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0\">"
   "<title>Amplifire</title>"
   "<style>"
-  "\"body { background-color: #808080; font-family: Arial, Helvetica, Sans-Serif; Color: #000000; }\""
+  "\"body { background-color: #000000; font-family: Arial, Helvetica, Sans-Serif; Color: #808080; }\""
   "</style>"
   "</head>"
   "<body>"
@@ -175,7 +175,7 @@ void AP::returnForm() {
   message += "<br>";
 
   message += "<h4>Trigger</h4>";
-  message += "Trigger Sensitivity [0-90]: ";
+  message += "Trigger Sensitivity [0-90%]: ";
   message += numberInput("thresholdPercent", this->thresholdPercent, 0, 90);
   message += "<br>Retrigger After [50-3000] ms: ";
   message += numberInput("retriggerDelay", this->retriggerDelay, 50, 3000);
