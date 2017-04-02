@@ -18,31 +18,31 @@ From there, the Operator can access operator of Amplifire, and provides the foll
 
 **Arming**
 
-ARMED/Disarmed.  *arming status select. Amplifire signals armed status with red color and disarmed status with blue color.*
+ARMED/Disarmed.  *arming. Amplifire signals armed status with red color and disarmed status with blue color.*
 
 **Trigger**
 
 Trigger Sensitivity [0-90]: *Amplifire calibrates the IR level after each Operator input. This setting expresses the percentage change from the calibration reading required to trigger the Effect.  e.g. 90% is very sensitive, and 10% is very insensitive.* 
 
-Retrigger After [50-3000] ms: *Amplifire will pause for this amount of time after completing a firing sequence, so that it does not self-trigger.*
+Retrigger After [50-3000] ms: *pause for this amount of time after completing a firing sequence, so that it does not self-trigger.*
 
-** Timing **
+**Timing**
 
-Open Time [50-3000] ms: *Amplifire will open the solenoid for this duration every cycle.*
+Open Time [50-3000] ms: *open the solenoid for this duration every cycle.*
 
-Close Time [50-3000] ms: *Amplifire will close the solenoid for this duration every cycle.*
+Close Time [50-3000] ms: *close the solenoid for this duration every cycle.*
 
-Number of open-close cycles: *Amplifire will perform this number of open/close cycles, then pause for the retrigger time before firing again.*
+Number of open-close cycles: *perform this number of open/close cycles, then pause for the retrigger time before firing again.*
 
 ## Design
 
 ### Control 
 
-![P&ID Diagram](https://github.com/the-magister/afterburn/drawings/diagram.png)
+![P&ID Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/diagram.png)
 
 ### Physical Diagram
 
-![Physical Diagram](https://github.com/the-magister/afterburn/drawings/diagram.png)
+![Physical Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/diagram.png)
 
 ## Fire Safety Plan
 
