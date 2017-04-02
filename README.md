@@ -4,7 +4,7 @@
 
 “Amplifire” is to a Fire Performer what an electric amplifier is to a musician.  
 
-One or more propane flame effects are sited within a fire perimeter.  These effects are supervised/armed by fire safeties at the perimeter, and lighting choices indicate the armed/disarmed status of the flame effect, and provide a visual cue on what effect could be triggered (single vs multiple releases, tempo, volume).  The flame effects are triggered by infrared sensors that “look” upwards and above the flame effect and can only “see” objects in the portion of the infrared spectrum that fire tools radiate.  Thus, Fire Performers simply pass their tool above the flame effect to trigger it, and their tools also serve as the ignition source for the effect (although, there will be a secondary pilot present).  Yes, this is an insanely good idea: now a Fire performer with a pair of poi can chuck fireballs as part of their routine.  
+One or more propane flame effects are sited within a fire perimeter.  These effects are supervised/armed by fire safeties at the perimeter, and lighting choices indicate the armed/disarmed status of the flame effect, and provide a visual cue on what effect could be triggered (single vs multiple releases, tempo, volume).  The flame effects are triggered by infrared sensors that "looks" upwards and above the flame effect and is senstive to light with wavelengths in the range of 760-1100nm, the portion of the infrared spectrum that fire tools radiate.  Thus, Fire Performers simply pass their tool above the flame effect to trigger it, and their tools also serve as the ignition source for the effect (although, there will be a secondary pilot present).  Yes, this is an insanely good idea: now a Fire performer with a pair of poi can chuck fireballs as part of their routine.  
 
 Flame Effects feels like it’s split into two camps: propane and handheld tools.  This project seeks to to put (analog) fire performers with hand-held tools in charge of (mechanical) large-scale propane effects.  Both groups benefit: the fire performers add a natural, human element and the propane effects supply a larger scale.  
 
@@ -22,7 +22,7 @@ From there, the Operator can access operator of Amplifire, and provides the foll
 > 
 > **Trigger**
 > 
-> Trigger Sensitivity [0-90]: *Amplifire calibrates the IR level after each Operator input. This setting expresses the percentage change from the calibration reading required to trigger the Effect.  e.g. 90% is very sensitive, and 10% is very insensitive.* 
+> Trigger Sensitivity [0-90%]: *Amplifire calibrates the IR level after each Operator input. This setting expresses the percentage change from the calibration reading required to trigger the Effect.  e.g. 90% is very sensitive, and 10% is very insensitive.* 
 > 
 > Retrigger After [50-3000] ms: *pause for this amount of time after completing a firing sequence, so that it does not self-trigger.*
 > 
@@ -34,15 +34,16 @@ From there, the Operator can access operator of Amplifire, and provides the foll
 > 
 > Number of open-close cycles: *perform this number of open/close cycles, then pause for the retrigger time before firing again.* 
 
-## Design
-
-### Control 
-
-![P&ID Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/diagram.png)
+## Design Details
 
 ### Physical Diagram
 
-![Physical Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/diagram.png)
+![Physical Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/pysical.png)
 
 ## Fire Safety Plan
 
+### Site Diagram
+
+### Process Diagram
+
+![P&ID Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/diagram.png)
