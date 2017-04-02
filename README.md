@@ -36,6 +36,10 @@ From there, the Operator can access operator of Amplifire, and provides the foll
 
 ## Design Details
 
+### Flame Temperature
+
+Near infrared (near-IR, 700-1100nm) array flame detectors, also known as visual flame detectors, employ flame recognition technology to confirm fire by analyzing near IR radiation using a charge-coupled device (CCD).  Thus, near-IR detectors are relatively insensitive to visibile light and wide-band IR.  Wide-band IR (4400 nM, CO2 emission spectra) is not used.  The choice of 700-1100nm also screens out hot, "blue" flames such as propane torches, but still is sensitive to cooler, "yellow" fires such as lighters, matches and, of course, wicked fire tools.
+
 ### Physical Diagram
 
 ![Physical Diagram](https://github.com/the-magister/afterburn/raw/master/drawings/physical.png)
