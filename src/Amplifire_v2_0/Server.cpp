@@ -16,56 +16,71 @@ void AP::begin() {
   IPAddress netMsk(255, 255, 255, 0);
 
   // set AP mode
-  WiFi.mode(WIFI_AP);
+  WiFi.setAutoConnect(false); // ?
+  WiFi.setOutputPower(20.5); // max
   WiFi.disconnect();
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.mode(WIFI_AP);
 
   Serial << F("Server: configuring AP(") << ssid << F(") password(") << password << F(").") << endl;
   WiFi.softAPConfig(apIP, gate, netMsk);
-  const byte channel = 8; // [1-13]
-  WiFi.softAP(ssid, password, channel);
+  int channel = 8; // [1-13]
+  int hidden = 0; // 0=broadcast SSID
+  int max_conn = 1; // number of connections needed.
+  WiFi.softAP(ssid, password, channel, hidden);
   delay(500); // Without delay I've seen the IP address blank
-  
-  IPAddress myIP = WiFi.softAPIP();
-  Serial << F("Server: connect to http://") << myIP << F(" or http://") << myHostname << F(".local") << endl;
 
-  // Setup the DNS server redirecting all the domains to the apIP 
+  IPAddress myIP = WiFi.softAPIP();
+  Serial << F("Server: connect to http://") << myIP << endl;
+
+  // what's up?
+//  WiFi.printDiag( Serial ); 
+  
+  // Setup the DNS server redirecting all the domains to the apIP
   const byte DNS_PORT = 53;
-//  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  //  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
   dnsServer.setTTL(300);
   dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
-  if( dnsServer.start(DNS_PORT, "*", apIP) ) {
+  if ( dnsServer.start(DNS_PORT, "*", apIP) ) {
     Serial << F("Server: DNS started") << endl;
   } else {
     Serial << F("Server: ERROR on DNS startup!") << endl;
   }
   delay(500); // Pause ?
-  
+
+//  webServer.setNoDelay(true); // ?
   webServer.on("/", handleRoot);
-  webServer.onNotFound( handleCaptiveGateway );
+//  webServer.onNotFound( handleCaptiveGateway );
   webServer.begin();
-  Serial << F("Server: web server started") << webServer.uri() << endl;
+  Serial << F("Server: web server started") << endl;
 
   // big strings, so let's avoid fragmentation by pre-allocating
-  message.reserve(4096);
+  message.reserve(8192);
 }
 
 
 boolean AP::update() {
   this->haveUpdate = false;
-  
+
   dnsServer.processNextRequest();
   webServer.handleClient();
 
-  static byte lastClient, lastStatus;
-  byte client = webServer.client();
+  static byte lastClient, lastStatus, lastStationCount;
+  //  byte client = webServer.client();
+  // Do NOT call this .client() method!!!!!
   byte status = WiFi.status();
-  if( lastClient != client ) {
-    Serial << F("Server: client change ") << lastClient << F("->") << client << endl;
-    lastClient = client;    
+  byte stationCount = WiFi.softAPgetStationNum();
+
+  //  if( lastClient != client ) {
+  //    Serial << F("Server: client change ") << lastClient << F("->") << client << endl;
+  //  }
+  if ( lastStatus != status ) {
+    Serial << F("Server: WiFi status change ") << lastStatus << F("->") << status << endl;
+    lastStatus = status;
   }
-  if( lastStatus != status ) {
-    Serial << F("Server: WiFi change ") << lastStatus << F("->") << status << endl;
-    lastStatus = status;    
+  if ( lastStationCount != stationCount ) {
+    Serial << F("Server: AP station count change ") << lastStationCount << F("->") << stationCount << endl;
+    lastStationCount = stationCount;
   }
 
   return ( this->haveUpdate );
@@ -109,7 +124,7 @@ const char HEAD_FORM[] PROGMEM =
   "<!DOCTYPE HTML>"
   "<html>"
   "<head>"
-//  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0\">"
+  //  "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0, maximum-scale = 1.0, user-scalable=0\">"
   "<meta name = \"viewport\" content = \"width = device-width, initial-scale = 1.0\">"
   "<title>Amplifire</title>"
   "<style>"
@@ -133,8 +148,8 @@ void handleCaptiveGateway() {
   message = FPSTR(HEAD_FORM);
 
   message += "<h2><a href=\"http://192.168.1.1/\">http://192.168.1.1/</a></h2>";
-  
- // append footer
+
+  // append footer
   message += FPSTR(TAIL_FORM);
 
   // send form
@@ -144,7 +159,11 @@ void handleCaptiveGateway() {
 }
 
 void handleRoot() {
+  Serial << F("Server: client request.") << endl;
+  
   if (webServer.hasArg("Armed")) {
+    Serial << F("Server: responding to form imputs.") << endl;
+  
     // process submission
     ap.set(
       webServer.arg("Armed").toInt(),
@@ -155,8 +174,10 @@ void handleRoot() {
       webServer.arg("thresholdPercent").toInt()
     );
   }
+
   // send back the form
   ap.returnForm();
+  Serial << F("Server: sent form.") << endl;
 }
 
 void AP::returnForm() {
@@ -169,9 +190,9 @@ void AP::returnForm() {
 
   // form contents
   message += "<h4>Arming</h4>";
-  message += "Armed ";
+  message += "Armed: ";
   message += radioInput("Armed", "1", false, "ARMED"); // Note that we never default to "ARMED" setting, even if that was pressed last time.
-  message += radioInput("Armed", "0", true, "Disarmed");
+  message += radioInput("Armed", "0", true, "Disarmed"); // Note that we never default to "ARMED" setting, even if that was pressed last time.
   message += "<br>";
 
   message += "<h4>Trigger</h4>";

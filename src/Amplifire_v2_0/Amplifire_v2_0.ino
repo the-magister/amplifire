@@ -26,9 +26,9 @@ AP ap;
 
 unsigned long simulationDelay = 5000UL;
 
-#define NUM_LEDS 14
-#define PIN_CLK 12 // yellow wire on LED strip
-#define PIN_DATA 13 // green wire on LED strip
+#define NUM_LEDS 20
+#define PIN_DATA 12 // yellow wire on LED strip
+#define PIN_UNUSED 13 // pin is available on the 3pin screw terminal
 CRGB leds[NUM_LEDS];
 #define MASTER_BRIGHTNESS 255
 
@@ -73,7 +73,7 @@ void setup() {
   ap.set(s.armed, s.onDuration, s.offDuration, s.nCycles, s.retriggerDelay, s.thresholdPercent);
 
   // set up the LEDs
-  FastLED.addLeds<WS2801, PIN_DATA, PIN_CLK, RGB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2811, PIN_DATA, RGB>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
 
   // set master brightness control
   FastLED.setBrightness(MASTER_BRIGHTNESS);
@@ -114,6 +114,9 @@ void loop() {
 
     // save 
     saveEEPROM();
+
+    // probably another web request inbound, so go again
+    return;
   }
   
   // see if arming state has changed
