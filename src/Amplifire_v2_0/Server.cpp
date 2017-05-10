@@ -66,8 +66,10 @@ boolean AP::update() {
   webServer.handleClient();
 
   static byte lastClient, lastStatus, lastStationCount;
-  //  byte client = webServer.client();
+
   // Do NOT call this .client() method!!!!!
+  //  byte client = webServer.client();
+  
   byte status = WiFi.status();
   byte stationCount = WiFi.softAPgetStationNum();
 

@@ -1,10 +1,10 @@
+#define FASTLED_ESP8266_RAW_PIN_ORDER
 // Adafruit HUZZAH ESP8266
 
 #include <Streaming.h>
 #include <Metro.h>
 #include <Bounce.h>
 #include <EEPROM.h>
-#define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
 
 #include <ESP8266WiFi.h>
@@ -14,8 +14,8 @@
 
 #include "Solenoid.h"
 Solenoid solenoid;
-#define SOLENOID_PIN 15
-#define SOLENOID_OFF LOW
+#define SOLENOID_PIN 16
+#define SOLENOID_OFF HIGH
 
 #include "Sensor.h"
 Sensor sensor;
@@ -118,7 +118,10 @@ void loop() {
     // probably another web request inbound, so go again
     return;
   }
-  
+
+  // update the sensor
+  sensor.update();
+
   // see if arming state has changed
   if ( ! s.armed ) {
 
@@ -134,7 +137,7 @@ void loop() {
   } else {
     // check for sensor activity
     if ( !solenoid.running() ) {
-      if ( sensor.analogTrue() )
+      if ( sensor.isTriggered() )
         solenoid.start();
     }
   }

@@ -21,15 +21,18 @@ class Sensor {
     void setRetriggerDelay(unsigned long retriggerDelay);
     void setThreshold(byte percentThreshold);
 
-    // convenience functions
-    word analogValue(unsigned long readFor=5UL);
-    boolean analogTrue();
+    // call this while you want the sensor reading
+    void update();
+    // call this after update to see if there's a trigger event
+    boolean isTriggered();
 
   private:
     byte analogPin;
     word analogThreshold;
     unsigned long retriggerDelay;
     unsigned long lastTriggerTime;
+
+    unsigned long averageReading;
 
 };
 
