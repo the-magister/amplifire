@@ -27,6 +27,8 @@ class Solenoid {
     boolean isFiring(); // returns true if the firing pin is on.
     void stop(); // halt any time
 
+    void purge();  // you should never use this.
+
   private:
     byte pin, off, on, cyclesTotal,  remainingCycles;
 

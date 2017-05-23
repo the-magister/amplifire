@@ -145,14 +145,10 @@ void loop() {
   // update the lights
   showSettings(s.armed, solenoid.isFiring());
 
-/*
   static Metro printInterval(1000UL);
   if ( printInterval.check() ) {
     sensor.show();
-    solenoid.show();
-    Serial << endl;
   }
-*/
 }
 
 void showSettings(boolean armed, boolean on) {

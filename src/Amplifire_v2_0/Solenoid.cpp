@@ -8,6 +8,11 @@ void Solenoid::setOn() {
   this->isOn = true;
   if( this->isArmed ) digitalWrite(this->pin, this->on);
 }
+void Solenoid::purge() {
+  setOn();
+  delay(3000);
+  setOff();
+}
 void Solenoid::toggle() { 
   if( this->isOn ) {
     this->setOff();

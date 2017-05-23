@@ -49,6 +49,7 @@ void AP::begin() {
   delay(500); // Pause ?
 
 //  webServer.setNoDelay(true); // ?
+  webServer.on("/purge", handlePurge);
   webServer.on("/", handleRoot);
 //  webServer.onNotFound( handleCaptiveGateway );
   webServer.begin();
@@ -158,6 +159,13 @@ void handleCaptiveGateway() {
   webServer.send(200, "text/html", message);
 
 
+}
+
+void handlePurge() {
+  Serial << F("Server: purge request.") << endl;
+  solenoid.purge();
+  
+  ap.returnForm();
 }
 
 void handleRoot() {

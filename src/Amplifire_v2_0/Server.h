@@ -9,9 +9,12 @@
 #include <WiFiClient.h> 
 #include <ESP8266WebServer.h>
 #include <DNSServer.h>
+#include "Solenoid.h"
+extern Solenoid solenoid;
 
 // handled outside of class
 void handleRoot();
+void handlePurge();
 void handleCaptiveGateway();
 
 class AP {
