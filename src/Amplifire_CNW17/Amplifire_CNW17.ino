@@ -129,12 +129,13 @@ void loop() {
     return;
   }
 
-  // update the sensor
-  sensor.update();
 
   // see if arming state has changed
   if ( ! s.armed ) {
 
+    // update the sensor
+    sensor.update();
+  
     // see if we need to run another trial loop
     if ( !solenoid.running() ) {
       if ( simulationInterval.check() ) {
@@ -145,10 +146,13 @@ void loop() {
     }
 
   } else {
-    // check for sensor activity
+    // we're armed
+    // if we're also running, bail out, specifically not updating the sensor while chucking fire.
     if ( !solenoid.running() ) {
-      if ( sensor.isTriggered() )
-        solenoid.start();
+      // otherwise, update the sensor to look for trigger
+      sensor.update();    
+      // check for trigger
+      if ( sensor.isTriggered() ) { solenoid.start(); }
     }
   }
 
@@ -162,6 +166,10 @@ void loop() {
 }
 
 void showSettings(boolean armed, boolean on) {
+  // track, and don't do anything if nothing has changed.
+  static boolean lastArmed, lastOn;
+  if( lastArmed == armed && lastOn == on ) return;
+  
   // used colors
   const CRGB armedOn = CRGB(255, 0, 0);
   const CRGB armedOff = CRGB(64, 0, 0);
@@ -170,7 +178,7 @@ void showSettings(boolean armed, boolean on) {
 
   // track color
   static CRGB color = disarmedOff;
-
+  
   if (armed && on) color = blend(color, armedOn, 50);
   else if (armed && !on) color = blend(color, armedOff, 50);
   else if (!armed && on) color = blend(color, disarmedOn, 5);
