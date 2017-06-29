@@ -10,22 +10,26 @@ void Sensor::begin(byte analogPin) {
 
   Serial << endl;
 
-  averageReading = 1024; // start high so we don't get a false trigger
+  currentReading = analogRead(this->analogPin); // start reasonable so we don't get a false trigger
 }
 
 void Sensor::setThreshold(byte percentThreshold) {
 
   // readings need to drop below X% of the current value for a trigger to happen
-  this->analogThreshold = map(constrain(percentThreshold,0,100), 0, 100, 0, averageReading);
+  this->analogThreshold = map(constrain(percentThreshold,0,100), 0, 100, 0, currentReading);
 
-  Serial << F("Sensor: readings=") << averageReading << F(" *0.") << percentThreshold << F(" -> analogThreshold=") << this->analogThreshold << endl;
+  Serial << F("Sensor: readings=") << currentReading << F(" *0.") << percentThreshold << F(" -> analogThreshold=") << this->analogThreshold << endl;
 }
 
 
 // information
+
 void Sensor::show() {
-  Serial << F("Sensor: (") << averageReading << F("/") << analogThreshold << F("->") << isTriggered() << F(") ");
-  Serial << F("retrigger delay=") << this->retriggerDelay << F("ms. ");
+  Serial << F("Sensor.");
+  Serial << F(" triggered: ") << (currentReading <= this->analogThreshold);
+  Serial << F(" threshold: ") << analogThreshold;
+  Serial << F(" currentReading: ") << currentReading;
+  Serial << F(" retrigger delay=") << this->retriggerDelay << F("ms. ");
   Serial << endl;
 }
 
@@ -40,11 +44,11 @@ void Sensor::update() {
   static Metro updateEvery(10UL);
   if (!updateEvery.check() ) return;
   
-  const unsigned long N = 3;
+  const unsigned long Nshort = 3;
 
   word current = analogRead(this->analogPin);
 
-  averageReading = ((N-1)*averageReading + current)/N;
+  currentReading = ((Nshort-1)*currentReading + current)/Nshort;
 
   updateEvery.reset();
 }
@@ -52,7 +56,7 @@ void Sensor::update() {
 // convenience functions
 boolean Sensor::isTriggered() {
   
-  boolean trigger = averageReading <= this->analogThreshold;
+  boolean trigger = currentReading <= this->analogThreshold;
   if( ! trigger ) return(false);
   
   boolean postDelay = (millis() - lastTriggerTime) > retriggerDelay;

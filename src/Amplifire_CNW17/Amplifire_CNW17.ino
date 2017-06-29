@@ -135,7 +135,15 @@ void loop() {
 
     // update the sensor
     sensor.update();
-  
+
+ /*
+    static Metro thresholdInterval(1000UL);
+    if ( thresholdInterval.check() ) {
+      sensor.setThreshold(s.thresholdPercent);
+      thresholdInterval.reset();
+    }
+*/
+ 
     // see if we need to run another trial loop
     if ( !solenoid.running() ) {
       if ( simulationInterval.check() ) {
@@ -152,7 +160,11 @@ void loop() {
       // otherwise, update the sensor to look for trigger
       sensor.update();    
       // check for trigger
-      if ( sensor.isTriggered() ) { solenoid.start(); }
+      if ( sensor.isTriggered() ) { 
+        Serial << F("****** FIRING ******") << endl;
+        sensor.show();
+        solenoid.start(); 
+      }
     }
   }
 
@@ -162,6 +174,7 @@ void loop() {
   static Metro printInterval(1000UL);
   if ( printInterval.check() ) {
     sensor.show();
+    printInterval.reset();
   }
 }
 

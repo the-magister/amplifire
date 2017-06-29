@@ -32,7 +32,7 @@ class Sensor {
     unsigned long retriggerDelay;
     unsigned long lastTriggerTime;
 
-    unsigned long averageReading;
+    unsigned long currentReading;
 
 };
 
